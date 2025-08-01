@@ -1,7 +1,9 @@
 package com.examination.online_examination_server.service;
 
 import com.examination.online_examination_server.dto.ExamAttemptDTO;
+import com.examination.online_examination_server.dto.TimeRemainingDTO;
 import com.examination.online_examination_server.entity.ExamAttempt;
+import com.examination.online_examination_server.exception.ExamNotInProgressException;
 import com.examination.online_examination_server.exception.ResourceNotFoundException;
 import com.examination.online_examination_server.repository.ExamAttemptRepository;
 import jakarta.transaction.Transactional;
@@ -16,6 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -126,6 +130,43 @@ public class ExamAttemptService {
         log.info("Getting attempt count for student: {} and exam: {}", studentId, examId);
 
         return examAttemptRepository.countByStudentIdAndExamId(studentId, examId);
+    }
+
+
+    public TimeRemainingDTO getTimeRemaining(Long attemptId) {
+        log.info("Calculating time remaining for attempt {}", attemptId);
+
+        ExamAttempt attempt = examAttemptRepository.findById(attemptId)
+                .orElseThrow(() -> new ResourceNotFoundException("Exam attempt not found"));
+
+        if (attempt.getStatus() != ExamAttempt.AttemptStatus.IN_PROGRESS) {
+            throw new ExamNotInProgressException("Exam attempt is not in progress");
+        }
+
+        LocalDateTime startTime = attempt.getStartTime();
+        int durationMinutes = attempt.getExam().getDuration();
+        LocalDateTime endTime = startTime.plusMinutes(durationMinutes);
+        LocalDateTime now = LocalDateTime.now();
+
+        long minutesRemaining = Duration.between(now, endTime).toMinutes();
+        long secondsRemaining = Duration.between(now, endTime).getSeconds() % 60;
+
+        TimeRemainingDTO timeRemaining = new TimeRemainingDTO();
+        timeRemaining.setMinutesRemaining(Math.max(0, minutesRemaining));
+        timeRemaining.setSecondsRemaining(Math.max(0, secondsRemaining));
+        timeRemaining.setTotalSecondsRemaining(Math.max(0, Duration.between(now, endTime).getSeconds()));
+        timeRemaining.setTimeExpired(now.isAfter(endTime));
+
+        // Auto-submit if time expired
+        if (timeRemaining.isTimeExpired() && attempt.getStatus() == ExamAttempt.AttemptStatus.IN_PROGRESS) {
+            attempt.setEndTime(endTime);
+            attempt.setSubmittedAt(LocalDateTime.now());
+            attempt.setIsSubmitted(true);
+            attempt.setStatus(ExamAttempt.AttemptStatus.AUTO_SUBMITTED);
+            examAttemptRepository.save(attempt);
+        }
+
+        return timeRemaining;
     }
 
 

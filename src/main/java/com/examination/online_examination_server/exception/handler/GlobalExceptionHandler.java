@@ -14,10 +14,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 
+import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 
 @ControllerAdvice
@@ -121,7 +123,6 @@ public class GlobalExceptionHandler {
     }
 
 
-
     //Question Exception
     @ExceptionHandler(QuestionValidationException.class)
     public ResponseEntity<ResponseDTO> handleQuestionValidationException(
@@ -145,10 +146,6 @@ public class GlobalExceptionHandler {
     }
 
 
-
-
-
-
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ResponseDTO> ResourceNotFoundException(
             ResourceNotFoundException ex, WebRequest request) {
@@ -162,8 +159,6 @@ public class GlobalExceptionHandler {
         log.error("Duplicate Resource", ex.getMessage(), ex.getCause());
         return ResponseBuilder.buildErrorResponse(VarListt.RES_DUPLICATE, ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
-
-
 
 
     @ExceptionHandler(StudentNotFoundException.class)
@@ -188,6 +183,31 @@ public class GlobalExceptionHandler {
         return ResponseBuilder.buildErrorResponse(VarListt.RES_FAILURE, ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
+
+    //Exception handlers fot taking exam
+    @ExceptionHandler(ExamNotAvailableException.class)
+    public ResponseEntity<ResponseDTO> handleExamNotAvailable(ExamNotAvailableException ex) {
+        log.error("Exam not available: {}", ex.getMessage());
+        return ResponseBuilder.buildErrorResponse("EXAM_NOT_AVAILABLE", ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(StudentNotRegisteredException.class)
+    public ResponseEntity<ResponseDTO> handleStudentNotRegistered(StudentNotRegisteredException ex) {
+        log.error("Student not registered: {}", ex.getMessage());
+        return ResponseBuilder.buildErrorResponse("STUDENT_NOT_REGISTERED", ex.getMessage(), HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(MaxAttemptsExceededException.class)
+    public ResponseEntity<ResponseDTO> handleMaxAttemptsExceeded(MaxAttemptsExceededException ex) {
+        log.error("Max attempts exceeded: {}", ex.getMessage());
+        return ResponseBuilder.buildErrorResponse("MAX_ATTEMPTS_EXCEEDED", ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ExamAlreadySubmittedException.class)
+    public ResponseEntity<ResponseDTO> handleExamAlreadySubmitted(ExamAlreadySubmittedException ex) {
+        log.error("Exam already submitted: {}", ex.getMessage());
+        return ResponseBuilder.buildErrorResponse("EXAM_ALREADY_SUBMITTED", ex.getMessage(), HttpStatus.CONFLICT);
+    }
 
 
 }

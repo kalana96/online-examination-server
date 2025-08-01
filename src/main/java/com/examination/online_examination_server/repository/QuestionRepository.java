@@ -18,6 +18,9 @@ public interface QuestionRepository extends JpaRepository<Question, Long>{
 
     List<Question> findByIsDeletedFalse();
 
+    List<Question> findByExamIdOrderByIdAsc(Integer examId);
+//    List<Question> findByExamId(Integer examId);
+
     @Query("SELECT q FROM Question q WHERE q.exam.id = :examId AND q.isDeleted = false")
     List<Question> findActiveQuestionsByExamId(@Param("examId") Integer examId);
     @Query("SELECT q FROM Question q WHERE q.questionText LIKE %:keyword%")

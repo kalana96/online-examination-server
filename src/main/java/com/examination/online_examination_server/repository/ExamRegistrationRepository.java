@@ -17,6 +17,8 @@ public interface ExamRegistrationRepository extends JpaRepository<ExamRegistrati
     // Find registration by student and exam
     Optional<ExamRegistration> findByStudentIdAndExamId(Integer studentId, Integer examId);
 
+    boolean existsByExamIdAndStudentId(Integer examId, Integer studentId);
+
     // Find all registrations for a specific exam
     List<ExamRegistration> findByExamId(Integer examId);
 

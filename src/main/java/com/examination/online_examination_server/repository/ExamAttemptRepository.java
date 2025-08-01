@@ -1,6 +1,8 @@
 package com.examination.online_examination_server.repository;
 
+import com.examination.online_examination_server.entity.Exam;
 import com.examination.online_examination_server.entity.ExamAttempt;
+import com.examination.online_examination_server.entity.Student;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -13,8 +15,11 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.Optional;
 
-public interface ExamAttemptRepository extends JpaRepository <ExamAttempt, Long>{
+public interface ExamAttemptRepository extends JpaRepository<ExamAttempt, Long> {
     List<ExamAttempt> findByStudentId(Integer studentId);
+
+    //    Long countByStudentIdAndExamId(Integer studentId, Integer examId);
+    Long countByStudentAndExam(Student student, Exam exam);
 
     List<ExamAttempt> findByExamId(Integer examId);
 
@@ -30,4 +35,13 @@ public interface ExamAttemptRepository extends JpaRepository <ExamAttempt, Long>
     Optional<ExamAttempt> findByStudentIdAndExamIdAndStatus(Integer studentId, Integer examId, ExamAttempt.AttemptStatus status);
 
     Page<ExamAttempt> findByExamId(Integer examId, Pageable pageable);
+
+    /**
+     * Count the number of submitted attempts for a specific student and exam
+     * @param studentId the student ID
+     * @param examId the exam ID
+     * @param status the attempt status (SUBMITTED)
+     * @return count of submitted attempts
+     */
+    Long countByStudentIdAndExamIdAndStatus(Integer studentId, Integer examId, ExamAttempt.AttemptStatus status);
 }

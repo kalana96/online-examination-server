@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import lombok.extern.slf4j.Slf4j;
+
 import java.io.IOException;
 import java.util.List;
 
@@ -347,14 +348,14 @@ public class TeacherController {
 
     // Get all Grades
     @GetMapping("/getAllGrades")
-    public ResponseEntity GetAllGrades(){
+    public ResponseEntity GetAllGrades() {
         try {
             List<GradeDTO> gradeList = gradeService.getAllGrades();
             responseDTO.setCode(VarList.RES_SUCCESS);
             responseDTO.setMessage("Success");
             responseDTO.setContent(gradeList);
             return new ResponseEntity(responseDTO, HttpStatus.ACCEPTED);
-        }catch (Exception ex){
+        } catch (Exception ex) {
             responseDTO.setCode(VarList.RES_ERROR);
             responseDTO.setMessage(ex.getMessage());
             responseDTO.setContent(null);
@@ -397,6 +398,7 @@ public class TeacherController {
             return createErrorResponse(VarList.RES_ERROR, "An unexpected error occurred", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
     // Method to convert JSON string to ClassDTO
     private ClassDTO parseClassJson(String classJson) throws JsonProcessingException {
         ObjectMapper objectMapper = new ObjectMapper();
@@ -404,6 +406,7 @@ public class TeacherController {
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         return objectMapper.readValue(classJson, ClassDTO.class);
     }
+
     // Helper method to build update class response
     private ResponseEntity<ResponseDTO> buildClassUpdateResponse(String result, ClassDTO classDTO) {
         switch (result) {
@@ -424,7 +427,6 @@ public class TeacherController {
                 return createErrorResponse(VarList.RES_FAILURE, "Failed to update class", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
 
 
     // ===== STUDENT MANAGEMENT =====
@@ -542,9 +544,93 @@ public class TeacherController {
             responseDTO.setContent(null);
             return new ResponseEntity(responseDTO, HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }// Search for a specific student by ID
+
+    @GetMapping("/getStudentProfile/{id}")
+    public ResponseEntity GetStudentProfile(@PathVariable int id) {
+        try {
+            StudentDTO studentDTO = studentService.getStudentById(id); // Fetch student using studentService
+            if (studentDTO != null) {
+                responseDTO.setCode(VarList.RES_SUCCESS);
+                responseDTO.setMessage("Student found successfully");
+                responseDTO.setContent(studentDTO);
+                return new ResponseEntity(responseDTO, HttpStatus.OK);
+            } else {
+                responseDTO.setCode(VarList.RES_NO_DATE_FOUND);
+                responseDTO.setMessage("Student Not Found for this ID");
+                responseDTO.setContent(null);
+                return new ResponseEntity(responseDTO, HttpStatus.NOT_FOUND); //404
+            }
+        } catch (Exception ex) {
+            log.error("Error fetching student by ID: ", ex);
+            responseDTO.setCode(VarList.RES_ERROR);
+            responseDTO.setMessage(ex.getMessage());
+            responseDTO.setContent(null);
+            return new ResponseEntity(responseDTO, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
 
+    // Update an existing student
+    @PutMapping(value = "/editStudent", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ResponseDTO> updateStudent(
+            @RequestParam("student") String studentJson,
+            @RequestParam(value = "profilePhoto", required = false) MultipartFile profilePhoto) {
+        try {
+            StudentDTO studentDTO = parseStudentJson(studentJson);
+
+            // Validate profile photo
+            String fileValidationResult = validateAndProcessFile(profilePhoto, studentDTO);
+            if (fileValidationResult != null) {
+                return createErrorResponse(VarList.RES_ERROR, fileValidationResult, HttpStatus.BAD_REQUEST);
+            }
+            // Update the student
+            String result = studentService.updateStudent(studentDTO);
+            return buildStudentUpdateResponse(result, studentDTO);
+
+        } catch (JsonProcessingException ex) {
+            log.error("JSON parsing error", ex);
+            return createErrorResponse(VarList.RES_ERROR, "Invalid JSON format: " + ex.getOriginalMessage(), HttpStatus.BAD_REQUEST);
+        } catch (IOException ex) {
+            log.error("File processing error", ex);
+            return createErrorResponse(VarList.RES_ERROR, "Error processing file: " + ex.getMessage(), HttpStatus.UNPROCESSABLE_ENTITY);
+        } catch (IllegalArgumentException ex) {
+            log.error("Invalid input data", ex);
+            return createErrorResponse(VarList.RES_ERROR, "Invalid input data: " + ex.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (Exception ex) {
+            log.error("Unexpected error during student update", ex);
+            return createErrorResponse(VarList.RES_ERROR, "An unexpected error occurred", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // Helper method to build update Student response
+    private ResponseEntity<ResponseDTO> buildStudentUpdateResponse(String result, StudentDTO studentDTO) {
+        switch (result) {
+            case VarList.RES_SUCCESS:
+                return createSuccessResponse("Student updated successfully", studentDTO);
+            case VarList.RES_ERROR:
+                return createErrorResponse(VarList.RES_ERROR, "Please enter student data", HttpStatus.BAD_REQUEST);
+            case VarList.RES_NO_DATE_FOUND:
+                return createErrorResponse(VarList.RES_NO_DATE_FOUND, "Student not found or is deleted", HttpStatus.NOT_FOUND);
+            case VarList.RES_DUPLICATE:
+                return createErrorResponse(VarList.RES_DUPLICATE, "Registration number already exists", HttpStatus.CONFLICT);
+            case VarList.RES_DUPLICATE_NIC:
+                return createErrorResponse(VarList.RES_DUPLICATE_NIC, "NIC already exists", HttpStatus.CONFLICT);
+            case VarList.RES_DUPLICATE_EMAIL:
+                return createErrorResponse(VarList.RES_DUPLICATE_EMAIL, "Email already exists", HttpStatus.CONFLICT);
+            case VarList.RES_DUPLICATE_USERNAME:
+                return createErrorResponse(VarList.RES_DUPLICATE_USERNAME, "Username already exists", HttpStatus.CONFLICT);
+            case VarList.RES_CLASS_NOT_FOUND:
+                return createErrorResponse(VarList.RES_CLASS_NOT_FOUND, "Class not found", HttpStatus.BAD_REQUEST);
+            case VarList.RES_NO_SUBJECTS:
+                return createErrorResponse(VarList.RES_NO_SUBJECTS, "Student must have at least one subject", HttpStatus.BAD_REQUEST);
+            case VarList.RES_INVALID_INPUT:
+                return createErrorResponse(VarList.RES_INVALID_INPUT, "One or more subject IDs are invalid", HttpStatus.BAD_REQUEST);
+            default:
+                log.error("Student update failed with result code: {}", result);
+                return createErrorResponse(VarList.RES_FAILURE, "Failed to update student", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
 
     // ===== ENDPOINTS FOR GETTING CLASSES BY TEACHER =====
@@ -681,9 +767,6 @@ public class TeacherController {
                     "Error fetching classes for teacher: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
-
-
 
 
     // ===== ENDPOINTS FOR GETTING CLASSES WITH STUDENT COUNT BY TEACHER =====
@@ -827,12 +910,6 @@ public class TeacherController {
                     "Error fetching class count for teacher: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
-
-
-
-
-
 
 
 }

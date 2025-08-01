@@ -25,22 +25,24 @@ public class ClassService {
     public String SaveClass(ClassDTO classDTO) {
         if (classRepository.existsById(classDTO.getId())) {
             return VarList.RES_DUPLICATE;
-        }else {
+        } else {
             classRepository.save(modelMapper.map(classDTO, Class.class));
             return VarList.RES_SUCCESS;
         }
     }
 
+
     public List<ClassDTO> GetAllClass() {
         List<Class> empList = classRepository.findAll();
-        return modelMapper.map(empList, new TypeToken<List<ClassDTO>>(){}.getType());
+        return modelMapper.map(empList, new TypeToken<List<ClassDTO>>() {
+        }.getType());
     }
 
     public String UpdateClass(ClassDTO classDTO) {
-        if (classRepository.existsById(classDTO.getId())){
+        if (classRepository.existsById(classDTO.getId())) {
             classRepository.save(modelMapper.map(classDTO, Class.class));
             return VarList.RES_SUCCESS;
-        }else {
+        } else {
             return VarList.RES_NO_DATE_FOUND;
         }
     }
@@ -82,11 +84,11 @@ public class ClassService {
 //        return subjectRepository.findAllDeletedSubjects(); // Fetch soft-deleted subjects
 //    }
 
-    public ClassDTO SearchClass(int id){
-        if (classRepository.existsById(id)){
+    public ClassDTO SearchClass(int id) {
+        if (classRepository.existsById(id)) {
             Class cl = classRepository.findById(id).orElse(null);
             return modelMapper.map(cl, ClassDTO.class);
-        }else {
+        } else {
             return null;
         }
     }

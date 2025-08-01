@@ -19,6 +19,7 @@ public class StudentAnswerDTO {
     private Integer answerOrder;
     private Boolean isFlagged = false;
     private String flagReason;
+    private Boolean isSelected;
 
     @NotNull(message = "Exam attempt ID is required")
     private Long examAttemptId;

@@ -72,7 +72,8 @@ public class ExamAttempt {
         SUBMITTED,
         TIMEOUT,
         ABANDONED,
-        CANCELLED
+        CANCELLED,
+        AUTO_SUBMITTED
     }
 }
 

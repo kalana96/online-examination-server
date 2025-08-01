@@ -116,6 +116,7 @@ public class AdminService {
         if (adminDTO.getEmail() != null &&
                 !adminDTO.getEmail().equals(existingAdmin.getEmail())) {
             if (adminRepository.existsByEmailAndIdNot(adminDTO.getEmail(), adminDTO.getId())) {
+                // Assuming adminRepository has a method to check email against all admins except the current one
                 log.warn("Email {} already exists for another admin", adminDTO.getEmail());
                 return VarList.RES_DUPLICATE_EMAIL;
             }
