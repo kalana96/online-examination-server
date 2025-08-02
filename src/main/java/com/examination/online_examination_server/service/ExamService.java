@@ -35,6 +35,12 @@ public class ExamService {
     private ExamRepository examRepository;
 
     @Autowired
+    private StudentService studentService;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
     private ClassRepository classRepository;
 
     @Autowired
@@ -127,6 +133,7 @@ public class ExamService {
             throw new ExamValidationException("Valid exam ID is required for update");
         }
     }
+
     // Method to check for duplicate exams
     private void checkForDuplicateExams(ExamDTO examDTO) {
         try {
@@ -199,62 +206,8 @@ public class ExamService {
         }
     }
 
-    // Main method to schedule an exam
-//    public String scheduleExam(ExamDTO examDTO) {
-//        try {
-//            log.info("Starting exam scheduling process for exam: {}", examDTO.getExamName());
-//
-//            // Step 1: Validate input data
-//            String validationResult = validateExamInput(examDTO);
-//            if (!VarList.RES_SUCCESS.equals(validationResult)) {
-//                log.warn("Exam input validation failed");
-//                return validationResult;
-//            }
-//
-//            // Step 2: Check for duplicate exams
-//            String duplicateCheck = checkForDuplicateExam(examDTO);
-//            if (!VarList.RES_SUCCESS.equals(duplicateCheck)) {
-//                log.warn("Duplicate exam check failed");
-//                return duplicateCheck;
-//            }
-//
-//            // Step 3: Validate class exists
-//            if (!validateClass(examDTO.getClassId())) {
-//                log.warn("Class validation failed for ID: {}", examDTO.getClassId());
-//                return VarList.RES_CLASS_NOT_FOUND;
-//            }
-//
-//            // Step 4: Validate teacher exists
-//            if (!validateTeacher(examDTO.getTeacherId())) {
-//                log.warn("Teacher validation failed for ID: {}", examDTO.getTeacherId());
-//                return VarList.RES_TEACHER_NOT_FOUND;
-//            }
-//
-//            // Step 5: Validate teacher-class association
-//            if (!validateTeacherClassAssociation(examDTO.getTeacherId(), examDTO.getClassId())) {
-//                log.warn("Teacher-class association validation failed");
-//                return VarList.RES_INVALID_TEACHER_CLASS_ASSOCIATION;
-//            }
-//
-//            // Step 6: Create and save exam
-//            Exam exam = createExamEntity(examDTO);
-//            Exam savedExam = examRepository.save(exam);
-//
-//            log.info("Exam '{}' scheduled successfully with ID: {}",
-//                    savedExam.getExamName(), savedExam.getId());
-//            return VarList.RES_SUCCESS;
-//
-//        } catch (DataAccessException ex) {
-//            log.error("Database error while scheduling exam: ", ex);
-//            return VarList.RES_ERROR;
-//        } catch (Exception ex) {
-//            log.error("Unexpected error while scheduling exam: ", ex);
-//            return VarList.RES_ERROR;
-//        }
-//    }
-
     @Transactional
-    public ExamDTO examSchedule (ExamDTO examDTO) {
+    public ExamDTO examSchedule(ExamDTO examDTO) {
         log.info("Starting exam scheduling process for exam: {}", examDTO.getExamName());
 
         try {
@@ -272,6 +225,15 @@ public class ExamService {
             Exam exam = createExamEntity(examDTO);
             Exam savedExam = examRepository.save(exam);
 
+            // Step 7: Send email notifications if enabled (ADD THIS)
+            if (savedExam.getSendEmailNotification() != null &&
+                    savedExam.getSendEmailNotification() &&
+                    savedExam.getEmailNotification() != null &&
+                    savedExam.getEmailNotification().getSendNotification()) {
+
+                sendExamNotificationEmails(savedExam);
+            }
+
             // Convert back to DTO for response
             return convertToDTO(savedExam);
         } catch (DataAccessException ex) {
@@ -286,85 +248,30 @@ public class ExamService {
         }
     }
 
-    // Method to get exam by ID
-    public ExamDTO getExamById(Integer examId) {
+    private void sendExamNotificationEmails(Exam exam) {
         try {
-            Optional<Exam> examOpt = examRepository.findActiveById(examId);
-            if (examOpt.isPresent()) {
-                return mapExamToDTO(examOpt.get());
+            log.info("Preparing to send email notifications for exam: {}", exam.getExamName());
+
+            // Get students associated with the exam's class
+            List<Student> students = studentService.getStudentsByClassId(exam.getClazz().getId());
+
+            if (students.isEmpty()) {
+                log.warn("No students found for class ID: {} in exam: {}",
+                        exam.getClazz().getId(), exam.getExamName());
+                return;
             }
-            log.warn("Exam with ID {} not found", examId);
-            return null;
-        } catch (Exception ex) {
-            log.error("Error fetching exam by ID {}: ", examId, ex);
-            return null;
+
+            log.info("Found {} students to notify for exam: {}", students.size(), exam.getExamName());
+
+            // Send emails asynchronously
+            emailService.sendExamNotificationEmail(exam, students);
+
+        } catch (Exception e) {
+            log.error("Error occurred while sending email notifications for exam: {}",
+                    exam.getExamName(), e);
+            // Don't throw exception here to avoid rolling back the exam creation
         }
     }
-
-    // Method to update exam
-//    public String updateExam(ExamDTO examDTO) {
-//        try {
-//            // Validate input
-//            if (examDTO.getId() == null || examDTO.getId() <= 0) {
-//                log.warn("Valid exam ID is required for update");
-//                return VarList.RES_INVALID_INPUT;
-//            }
-//
-//            String validationResult = validateExamInput(examDTO);
-//            if (!VarList.RES_SUCCESS.equals(validationResult)) {
-//                return validationResult;
-//            }
-//
-//            // Find existing exam
-//            Optional<Exam> existingExamOpt = examRepository.findActiveById(examDTO.getId());
-//            if (!existingExamOpt.isPresent()) {
-//                log.warn("Exam with ID {} not found", examDTO.getId());
-//                return VarList.RES_NO_DATE_FOUND;
-//            }
-//
-//            Exam existingExam = existingExamOpt.get();
-//
-//            // Check for duplicates (excluding current exam)
-//            boolean duplicateExists = examRepository.existsByExamNameAndClassIdAndExamDateAndIdNot(
-//                    examDTO.getExamName().trim(),
-//                    examDTO.getClassId(),
-//                    examDTO.getExamDate(),
-//                    examDTO.getId()
-//            );
-//
-//            if (duplicateExists) {
-//                log.warn("Another exam with the same name, class, and date/time already exists");
-//                return VarList.RES_DUPLICATE;
-//            }
-//
-//            // Validate class and teacher
-//            if (!validateClass(examDTO.getClassId())) {
-//                return VarList.RES_CLASS_NOT_FOUND;
-//            }
-//
-//            if (!validateTeacher(examDTO.getTeacherId())) {
-//                return VarList.RES_TEACHER_NOT_FOUND;
-//            }
-//
-//            if (!validateTeacherClassAssociation(examDTO.getTeacherId(), examDTO.getClassId())) {
-//                return VarList.RES_INVALID_TEACHER_CLASS_ASSOCIATION;
-//            }
-//
-//            // Update exam entity
-//            updateExamEntity(existingExam, examDTO);
-//            examRepository.save(existingExam);
-//
-//            log.info("Exam with ID {} updated successfully", examDTO.getId());
-//            return VarList.RES_SUCCESS;
-//
-//        } catch (DataAccessException ex) {
-//            log.error("Database error while updating exam: ", ex);
-//            return VarList.RES_ERROR;
-//        } catch (Exception ex) {
-//            log.error("Unexpected error while updating exam: ", ex);
-//            return VarList.RES_ERROR;
-//        }
-//    }
 
     @Transactional
     public ExamDTO updateExam(ExamDTO examDTO) {
@@ -418,6 +325,20 @@ public class ExamService {
         }
     }
 
+    // Method to get exam by ID
+    public ExamDTO getExamById(Integer examId) {
+        try {
+            Optional<Exam> examOpt = examRepository.findActiveById(examId);
+            if (examOpt.isPresent()) {
+                return mapExamToDTO(examOpt.get());
+            }
+            log.warn("Exam with ID {} not found", examId);
+            return null;
+        } catch (Exception ex) {
+            log.error("Error fetching exam by ID {}: ", examId, ex);
+            return null;
+        }
+    }
 
 
     // ===============================
@@ -508,6 +429,7 @@ public class ExamService {
 
     /**
      * Get all exams for a specific teacher
+     *
      * @param teacherId The ID of the teacher
      * @return List of ExamDTO objects for the teacher
      */
@@ -539,6 +461,7 @@ public class ExamService {
 
     /**
      * Get all exams for a specific class
+     *
      * @param classId The ID of the class
      * @return List of ExamDTO objects for the class
      */
@@ -570,8 +493,9 @@ public class ExamService {
 
     /**
      * Get exams by teacher and class
+     *
      * @param teacherId The ID of the teacher
-     * @param classId The ID of the class
+     * @param classId   The ID of the class
      * @return List of ExamDTO objects for the teacher and class
      */
     public List<ExamDTO> getExamsByTeacherAndClass(Integer teacherId, Integer classId) {
@@ -618,6 +542,7 @@ public class ExamService {
 
     /**
      * Get upcoming exams for a teacher
+     *
      * @param teacherId The ID of the teacher
      * @return List of upcoming ExamDTO objects
      */
@@ -657,6 +582,7 @@ public class ExamService {
 
     /**
      * Get upcoming exams for a specific student
+     *
      * @param studentId The ID of the student
      * @return List of upcoming exams for the student
      */
@@ -692,6 +618,7 @@ public class ExamService {
 
     /**
      * Get upcoming exams for a specific student
+     *
      * @param studentId The ID of the student
      * @return List of upcoming exams for the student
      */
@@ -723,52 +650,10 @@ public class ExamService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Get upcoming exams for a student with additional filtering options
-     * @param studentId The ID of the student
-     * @param examType Filter by exam type (optional)
-     * @param daysAhead Number of days ahead to look for exams (optional, default 30)
-     * @return List of upcoming exams for the student
-     */
-//    public List<ExamDTO> getUpcomingExamsForStudentWithFilters(Integer studentId, String examType, Integer daysAhead) {
-//        log.info("Fetching upcoming exams for student ID: {} with filters - examType: {}, daysAhead: {}",
-//                studentId, examType, daysAhead);
-//
-//        // Set default days ahead if not provided
-//        if (daysAhead == null) {
-//            daysAhead = 30;
-//        }
-//
-//        // First, verify that the student exists
-//        Student student = studentRepository.findById(studentId)
-//                .orElseThrow(() -> new ResourceNotFoundException("Student not found with ID: " + studentId));
-//
-//        // Get all classes the student is enrolled in
-//        List<Class> studentClasses = student.getClasses();
-//
-//        if (studentClasses.isEmpty()) {
-//            log.warn("Student with ID {} is not enrolled in any classes", studentId);
-//            return new ArrayList<>();
-//        }
-//
-//        // Extract class IDs
-//        List<Integer> classIds = studentClasses.stream()
-//                .map(Class::getId)
-//                .collect(Collectors.toList());
-//
-//        // Get upcoming exams with filters
-//        List<Exam> upcomingExams = examRepository.findUpcomingExamsForStudentWithFilters(
-//                classIds, examType, daysAhead);
-//
-//        // Convert to DTOs and return
-//        return upcomingExams.stream()
-//                .map(exam -> modelMapper.map(exam, ExamDTO.class))
-//                .sorted(Comparator.comparing(ExamDTO::getExamDate)) // Sort by exam date
-//                .collect(Collectors.toList());
-//    }
 
     /**
      * Get exam statistics for a teacher
+     *
      * @param teacherId The ID of the teacher
      * @return ExamStatsDTO containing statistics
      */
@@ -847,6 +732,7 @@ public class ExamService {
 
     /**
      * Get all active exams
+     *
      * @return List of all active ExamDTO objects
      */
     public List<ExamDTO> getAllActiveExams() {
@@ -866,6 +752,7 @@ public class ExamService {
 
     /**
      * Get upcoming exams (all teachers)
+     *
      * @return List of upcoming ExamDTO objects
      */
     public List<ExamDTO> getUpcomingExams() {
@@ -885,6 +772,7 @@ public class ExamService {
 
     /**
      * Get past exams
+     *
      * @return List of past ExamDTO objects
      */
     public List<ExamDTO> getPublishedPastExamsByTeacher(Integer teacherId) {
@@ -904,6 +792,7 @@ public class ExamService {
 
     /**
      * Get today's exams
+     *
      * @return List of today's ExamDTO objects
      */
     public List<ExamDTO> getTodaysExams() {
@@ -923,6 +812,7 @@ public class ExamService {
 
     /**
      * Search exams by name
+     *
      * @param searchTerm The search term
      * @return List of matching ExamDTO objects
      */
@@ -948,6 +838,7 @@ public class ExamService {
 
     /**
      * Get exams by type
+     *
      * @param examType The exam type
      * @return List of ExamDTO objects of the specified type
      */
@@ -972,9 +863,6 @@ public class ExamService {
     }
 
 
-
-
-
     // ========== PUBLISH STATUS METHODS ==========
 
     public ExamDTO publishExam(Integer id) {
@@ -994,7 +882,8 @@ public class ExamService {
 
     /**
      * Update exam publish status
-     * @param examId The ID of the exam
+     *
+     * @param examId      The ID of the exam
      * @param isPublished The publish status to set
      * @return Result code
      */
@@ -1086,6 +975,7 @@ public class ExamService {
 
     /**
      * Get all published exams
+     *
      * @return List of published ExamDTO objects
      */
     public List<ExamDTO> getAllPublishedExams() {
@@ -1104,6 +994,7 @@ public class ExamService {
 
     /**
      * Get all draft exams
+     *
      * @return List of draft ExamDTO objects
      */
     public List<ExamDTO> getAllDraftExams() {
@@ -1121,6 +1012,7 @@ public class ExamService {
 
     /**
      * Get published exams by teacher
+     *
      * @param teacherId The ID of the teacher
      * @return List of published ExamDTO objects for the teacher
      */
@@ -1152,6 +1044,7 @@ public class ExamService {
 
     /**
      * Get draft exams by teacher
+     *
      * @param teacherId The ID of the teacher
      * @return List of draft ExamDTO objects for the teacher
      */
@@ -1183,6 +1076,7 @@ public class ExamService {
 
     /**
      * Get published exams by class
+     *
      * @param classId The ID of the class
      * @return List of published ExamDTO objects for the class
      */
@@ -1214,6 +1108,7 @@ public class ExamService {
 
     /**
      * Get draft exams by class
+     *
      * @param classId The ID of the class
      * @return List of draft ExamDTO objects for the class
      */
@@ -1245,6 +1140,7 @@ public class ExamService {
 
     /**
      * Get published upcoming exams
+     *
      * @return List of published upcoming ExamDTO objects
      */
     public List<ExamDTO> getPublishedUpcomingExams() {
@@ -1263,6 +1159,7 @@ public class ExamService {
 
     /**
      * Get published exams for today
+     *
      * @return List of published ExamDTO objects for today
      */
     public List<ExamDTO> getPublishedTodaysExams() {
@@ -1281,6 +1178,7 @@ public class ExamService {
 
     /**
      * Get exam statistics including publish status for a teacher
+     *
      * @param teacherId The ID of the teacher
      * @return ExamStatsDTO containing statistics with publish status
      */
@@ -1363,6 +1261,7 @@ public class ExamService {
 
     /**
      * Check if an exam can be published
+     *
      * @param examId The ID of the exam
      * @return true if exam can be published, false otherwise
      */
@@ -1398,6 +1297,7 @@ public class ExamService {
 
     /**
      * Get publish status summary for a teacher
+     *
      * @param teacherId The ID of the teacher
      * @return Map containing publish status counts
      */
@@ -1431,13 +1331,6 @@ public class ExamService {
             return errorSummary;
         }
     }
-
-
-
-
-
-
-
 
 
     // ========== HELPER METHODS ==========
@@ -1693,7 +1586,47 @@ public class ExamService {
             Optional<Teacher> teacherOpt = teacherRepository.findActiveById(examDTO.getTeacherId());
             teacherOpt.ifPresent(existingExam::setTeacher);
         }
+
+        // Handle email notification updates
+        handleEmailNotificationUpdate(existingExam, examDTO);
     }
+
+    private void handleEmailNotificationUpdate(Exam existingExam, ExamDTO examDTO) {
+        if (examDTO.getEmailNotification() != null && examDTO.getEmailNotification().getSendNotification()) {
+            // Update send notification flag
+            existingExam.setSendEmailNotification(true);
+
+            if (existingExam.getEmailNotification() != null) {
+                // Update existing email notification
+                EmailNotification existingNotification = existingExam.getEmailNotification();
+                existingNotification.setEmailSubject(examDTO.getEmailNotification().getEmailSubject());
+                existingNotification.setEmailMessage(examDTO.getEmailNotification().getEmailMessage());
+                existingNotification.setSendNotification(true);
+
+                // Reset status to PENDING if notification details changed
+                if (existingNotification.getStatus() == EmailNotification.EmailStatus.SENT) {
+                    existingNotification.setStatus(EmailNotification.EmailStatus.PENDING);
+                }
+            } else {
+                // Create new email notification
+                EmailNotification emailNotification = new EmailNotification();
+                emailNotification.setEmailSubject(examDTO.getEmailNotification().getEmailSubject());
+                emailNotification.setEmailMessage(examDTO.getEmailNotification().getEmailMessage());
+                emailNotification.setSendNotification(true);
+                emailNotification.setStatus(EmailNotification.EmailStatus.PENDING);
+                emailNotification.setExam(existingExam);
+
+                existingExam.setEmailNotification(emailNotification);
+            }
+        } else {
+            // Disable email notification
+            existingExam.setSendEmailNotification(false);
+            if (existingExam.getEmailNotification() != null) {
+                existingExam.getEmailNotification().setSendNotification(false);
+            }
+        }
+    }
+
 
     /**
      * Map Exam entity to ExamDTO with complete information
@@ -1785,10 +1718,6 @@ public class ExamService {
 
         return examDTO;
     }
-
-
-
-
 
 
 }

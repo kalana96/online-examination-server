@@ -16,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.dao.DataAccessException;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -23,6 +24,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
+
 @Service
 @Slf4j
 @Transactional
@@ -133,7 +135,7 @@ public class StudentService {
             }
             return false; // Password is unique
 
-        }  catch (IllegalArgumentException ex) {
+        } catch (IllegalArgumentException ex) {
             log.error("Invalid password format for existence check: ", ex);
             return false;
         } catch (Exception ex) {
@@ -231,7 +233,6 @@ public class StudentService {
         user.setActive(true);
         return user;
     }
-
 
 
     // Update an existing student
@@ -423,62 +424,6 @@ public class StudentService {
     }
 
 
-
-    // Update an existing student without subjects
-//    public String updateStudent(StudentDTO studentDTO) {
-//        try {
-//            if (studentRepository.existsByRegistrationNumber(studentDTO.getRegistrationNumber())) {
-//                studentRepository.save(modelMapper.map(studentDTO, Student.class)); // Update student if it exists
-//                return VarList.RES_SUCCESS;
-//            } else {
-//                return VarList.RES_NO_DATE_FOUND; // Return a "no data found" response if student doesn't exist
-//            }
-//        }catch (DataAccessException ex) {
-//            log.error("Database error while updating student: ", ex);
-//            return VarList.RES_ERROR;
-//        } catch (Exception ex) {
-//            log.error("Unexpected error while updating student: ", ex);
-//            return VarList.RES_ERROR;
-//        }
-//    }
-
-
-    // get student list with without handling of deleted classes/subjects
-//    public List<StudentDTO> getAllStudents() {
-//        try {
-//            List<Student> students = studentRepository.findAll();
-//            List<StudentDTO> studentDTOs = new ArrayList<>();
-//
-//            for (Student student : students) {
-//                StudentDTO studentDTO = modelMapper.map(student, StudentDTO.class);
-//                // Map subjects
-//                if (student.getSubjects() != null && !student.getSubjects().isEmpty()) {
-//                    List<Integer> subjectIds = student.getSubjects().stream()
-//                            .map(Subject::getId)
-//                            .collect(Collectors.toList());
-//                    studentDTO.setSubjectIds(subjectIds);
-//
-//                    List<SubjectDTO> subjectDTOs = student.getSubjects().stream()
-//                            .map(subject -> modelMapper.map(subject, SubjectDTO.class))
-//                            .collect(Collectors.toList());
-//                    studentDTO.setSubjects(subjectDTOs);
-//                }
-//
-//                // Convert image to Base64 string if photo exists
-//                if (student.getProfilePhoto() != null) {
-//                    studentDTO.setProfilePhotoBase64(Base64.getEncoder().encodeToString(student.getProfilePhoto()));
-//                }
-//                studentDTOs.add(studentDTO);
-//            }
-//            return studentDTOs;
-//        } catch (Exception ex) {
-//            log.error("Error fetching all studentsss: ", ex);
-//            return new ArrayList<>();
-//        }
-//    }
-
-
-
     // Get student list with proper handling of deleted classes/subjects
     public List<StudentDTO> getAllStudents() {
         try {
@@ -499,6 +444,7 @@ public class StudentService {
 
     /**
      * Get total count of active students
+     *
      * @return total number of active students
      */
     public long getStudentCount() {
@@ -510,6 +456,42 @@ public class StudentService {
         }
     }
 
+    /**
+     * Get students by class ID for email notifications
+     * Returns actual Student entities (not DTOs) for email service
+     *
+     * @param classId - the class ID to find students for
+     * @return List of Student entities
+     */
+    public List<Student> getStudentsByClassId(Integer classId) {
+        try {
+            log.info("Fetching students for class ID: {}", classId);
+
+            // Use your existing repository method to get students by class
+            List<Student> students = studentRepository.findByClassIdAndIsDeletedFalse(classId);
+
+            log.info("Found {} students for class ID: {}", students.size(), classId);
+            return students;
+
+        } catch (Exception ex) {
+            log.error("Error fetching students by class ID {} for email notification: ", classId, ex);
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * Check if any active students exist for a given class
+     * @param classId - the class ID to check
+     * @return true if students exist, false otherwise
+     */
+    public boolean hasStudentsInClass(Integer classId) {
+        try {
+            return studentRepository.existsByClassIdActive(classId);
+        } catch (Exception ex) {
+            log.error("Error checking if students exist for class ID {}: ", classId, ex);
+            return false;
+        }
+    }
 
     // Helper method to map Student entity to DTO
     private StudentDTO mapStudentToDTO(Student student) {
@@ -615,24 +597,6 @@ public class StudentService {
     }
 
 
-    // Soft delete a student by registration number
-//    public String deleteStudent(int id) {
-//        Optional<Student> studentOptional = studentRepository.findById(id);
-//        if (studentOptional.isPresent()) {
-//            Student student = studentOptional.get();
-//            if (!student.isDeleted()) { // Check if student is not already deleted
-//                student.setDeleted(true); // Mark the student as deleted (soft delete)
-//                studentRepository.save(student); // Save the updated entity
-//                return VarList.RES_SUCCESS; // Success code
-//            } else {
-//                return VarList.RES_ALREADY_DELETED; // Student is already deleted
-//            }
-//        } else {
-//            return VarList.RES_NO_DATE_FOUND; // Return a "no data found" response if student doesn't exist
-//        }
-//    }
-
-
     // Soft delete a student
     public String deleteStudent(int id) {
         try {
@@ -664,44 +628,6 @@ public class StudentService {
             return null;
         }
     }
-
-
-    // get student by registration number
-//    public StudentDTO getStudentByRegistrationNumber(String registrationNumber) {
-//        try {
-//            Optional<Student> studentOpt = studentRepository.findByRegistrationNumber(registrationNumber);
-//
-//            if (studentOpt.isPresent()) {
-//                Student student = studentOpt.get();
-//                StudentDTO studentDTO = modelMapper.map(student, StudentDTO.class);
-//                // Map subject entities to subject IDs
-//                if (student.getSubject() != null && !student.getSubject().isEmpty()) {
-//                    List<Integer> subjectIds = student.getSubject().stream()
-//                            .map(Subject::getId)
-//                            .collect(Collectors.toList());
-//                    studentDTO.setSubjectIds(subjectIds);
-//
-//                    // Also set the full subject details if needed
-//                    List<SubjectDTO> subjectDTOs = student.getSubject().stream()
-//                            .map(subject -> modelMapper.map(subject, SubjectDTO.class))
-//                            .collect(Collectors.toList());
-//                    studentDTO.setSubjects(subjectDTOs);
-//                }
-//                // Handle profile photo - convert to base64 if exists
-//                if (student.getProfilePhoto() != null) {
-//                    String base64Photo = Base64.getEncoder().encodeToString(student.getProfilePhoto());
-//                    studentDTO.setProfilePhotoBase64("data:image/jpeg;base64," + base64Photo);
-//                }
-//                return studentDTO;
-//            }
-//            return null;
-//        } catch (Exception ex) {
-//            log.error("Error fetching student by registration number {}: ", registrationNumber, ex);
-//            return null;
-//        }
-//    }
-
-
 
 
 }

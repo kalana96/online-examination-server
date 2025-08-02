@@ -1,11 +1,13 @@
 package com.examination.online_examination_server.service;
 
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
+import com.examination.online_examination_server.entity.Exam;
+import com.examination.online_examination_server.entity.Student;
 
-@Service
-@Slf4j
-public class EmailService {
+import java.util.List;
 
+//@Service
+public interface  EmailService {
+    void sendExamNotificationEmail(Exam exam, List<Student> students);
+    void updateEmailNotificationStatus(Integer examId, String status, Integer sentCount, Integer failedCount);
 }
