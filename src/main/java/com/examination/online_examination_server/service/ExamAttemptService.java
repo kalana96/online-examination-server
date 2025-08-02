@@ -1,8 +1,11 @@
 package com.examination.online_examination_server.service;
 
 import com.examination.online_examination_server.dto.ExamAttemptDTO;
+import com.examination.online_examination_server.dto.QuestionDTO.QuestionResponseDTO;
+import com.examination.online_examination_server.dto.StudentAnswerDTO;
 import com.examination.online_examination_server.dto.TimeRemainingDTO;
 import com.examination.online_examination_server.entity.ExamAttempt;
+import com.examination.online_examination_server.entity.StudentAnswer;
 import com.examination.online_examination_server.exception.ExamNotInProgressException;
 import com.examination.online_examination_server.exception.ResourceNotFoundException;
 import com.examination.online_examination_server.repository.ExamAttemptRepository;
@@ -31,8 +34,7 @@ import java.util.stream.Collectors;
 public class ExamAttemptService {
 
     @Autowired
-    private ExamAttemptRepository examAttemptRepository
-            ;
+    private ExamAttemptRepository examAttemptRepository;
     private final ModelMapper modelMapper;
 
     public ExamAttemptDTO startExam(ExamAttemptDTO examAttemptDTO) {
@@ -82,17 +84,48 @@ public class ExamAttemptService {
         return modelMapper.map(updatedAttempt, ExamAttemptDTO.class);
     }
 
-//    @Transactional(readOnly = true)
+    //    @Transactional(readOnly = true)
+
+    // Service method to fetch and map additional details
     public ExamAttemptDTO getExamAttemptById(Long id) {
         log.info("Fetching exam attempt with id: {}", id);
 
         ExamAttempt examAttempt = examAttemptRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Exam attempt not found with id: " + id));
 
-        return modelMapper.map(examAttempt, ExamAttemptDTO.class);
+        // Map basic exam attempt details
+        ExamAttemptDTO examAttemptDTO = modelMapper.map(examAttempt, ExamAttemptDTO.class);
+
+        // Set student name
+        if (examAttempt.getStudent() != null) {
+            examAttemptDTO.setStudentFullName(examAttempt.getStudent().getFullName());
+        }
+
+        // Map student answers with question details
+        if (examAttempt.getStudentAnswers() != null && !examAttempt.getStudentAnswers().isEmpty()) {
+            List<StudentAnswerDTO> studentAnswerDTOs = examAttempt.getStudentAnswers().stream()
+                    .map(this::mapStudentAnswerWithQuestionDetails)
+                    .collect(Collectors.toList());
+            examAttemptDTO.setStudentAnswers(studentAnswerDTOs);
+        }
+
+        return examAttemptDTO;
     }
 
-//    @Transactional(readOnly = true)
+    // Helper method to map StudentAnswer with Question details
+    private StudentAnswerDTO mapStudentAnswerWithQuestionDetails(StudentAnswer studentAnswer) {
+        StudentAnswerDTO dto = modelMapper.map(studentAnswer, StudentAnswerDTO.class);
+
+        // Map question details
+        if (studentAnswer.getQuestion() != null) {
+            QuestionResponseDTO questionDTO = modelMapper.map(studentAnswer.getQuestion(), QuestionResponseDTO.class);
+            dto.setQuestionDetails(questionDTO);
+        }
+
+        return dto;
+    }
+
+    //    @Transactional(readOnly = true)
     public List<ExamAttemptDTO> getExamAttemptsByStudentId(Integer studentId) {
         log.info("Fetching exam attempts for student id: {}", studentId);
 
@@ -102,19 +135,60 @@ public class ExamAttemptService {
                 .collect(Collectors.toList());
     }
 
-//    @Transactional(readOnly = true)
+    //    @Transactional(readOnly = true)
     public Page<ExamAttemptDTO> getExamAttemptsByExamId(Integer examId, Pageable pageable) {
         log.info("Fetching exam attempts for exam id: {}", examId);
 
         Page<ExamAttempt> attempts = examAttemptRepository.findByExamId(examId, pageable);
+//        List<ExamAttemptDTO> attemptDTOs = attempts.getContent().stream()
+//                .map(attempt -> modelMapper.map(attempt, ExamAttemptDTO.class))
+//                .collect(Collectors.toList());
+
         List<ExamAttemptDTO> attemptDTOs = attempts.getContent().stream()
-                .map(attempt -> modelMapper.map(attempt, ExamAttemptDTO.class))
+                .map(this::mapToExamAttemptDTO)
                 .collect(Collectors.toList());
 
         return new PageImpl<>(attemptDTOs, pageable, attempts.getTotalElements());
     }
 
-//    @Transactional(readOnly = true)
+    // Custom mapping method to handle complex mapping
+    private ExamAttemptDTO mapToExamAttemptDTO(ExamAttempt attempt) {
+        ExamAttemptDTO dto = modelMapper.map(attempt, ExamAttemptDTO.class);
+
+        // Set student name
+//        if (attempt.getStudent() != null) {
+//            dto.setStudentName(attempt.getStudent().getFirstName() + " " + attempt.getStudent().getLastName());
+//        }
+
+        // Set student name using the entity method
+//        if (attempt.getStudent() != null) {
+//            dto.setStudentName(attempt.getStudent().getFullName());
+//        }
+
+        // Map student answers with question details
+        if (attempt.getStudentAnswers() != null && !attempt.getStudentAnswers().isEmpty()) {
+            List<StudentAnswerDTO> answerDTOs = attempt.getStudentAnswers().stream()
+                    .map(this::mapToStudentAnswerDTO)
+                    .collect(Collectors.toList());
+            dto.setStudentAnswers(answerDTOs);
+        }
+        return dto;
+    }
+
+    // Custom mapping method for StudentAnswer
+    private StudentAnswerDTO mapToStudentAnswerDTO(StudentAnswer answer) {
+        StudentAnswerDTO dto = modelMapper.map(answer, StudentAnswerDTO.class);
+
+        // Map question details
+        if (answer.getQuestion() != null) {
+            QuestionResponseDTO questionDTO = modelMapper.map(answer.getQuestion(), QuestionResponseDTO.class);
+            dto.setQuestionDetails(questionDTO);
+        }
+
+        return dto;
+    }
+
+    //    @Transactional(readOnly = true)
     public ExamAttemptDTO getActiveAttempt(Integer studentId, Integer examId) {
         log.info("Fetching active attempt for student: {} and exam: {}", studentId, examId);
 
@@ -125,7 +199,7 @@ public class ExamAttemptService {
         return activeAttempt != null ? modelMapper.map(activeAttempt, ExamAttemptDTO.class) : null;
     }
 
-//    @Transactional(readOnly = true)
+    //    @Transactional(readOnly = true)
     public Long getAttemptCount(Integer studentId, Integer examId) {
         log.info("Getting attempt count for student: {} and exam: {}", studentId, examId);
 

@@ -1,6 +1,7 @@
 package com.examination.online_examination_server.dto;
 
 import com.examination.online_examination_server.entity.ExamAttempt;
+import com.examination.online_examination_server.entity.Student;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -39,6 +40,8 @@ public class ExamAttemptDTO {
 
     @NotNull(message = "Student ID is required")
     private Integer studentId;
+
+    private String studentFullName;
 
     private List<StudentAnswerDTO> studentAnswers;
 }

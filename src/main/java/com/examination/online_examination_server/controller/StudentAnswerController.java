@@ -18,12 +18,13 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
-@RequestMapping("/student-answers")
+@RequestMapping("api/v1/common/student-answers")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*")
 public class StudentAnswerController {
+
     @Autowired
     private StudentAnswerService studentAnswerService;
 

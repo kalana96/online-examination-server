@@ -53,6 +53,10 @@ public class Exam {
     private Boolean isRandomizeOptions = false;
     @Column(name = "show_results_immediately")
     private Boolean showResultsImmediately = false;
+
+    @Column(name = "send_email_notification")
+    private Boolean sendEmailNotification = false;
+
     @Column(name = "allow_review")
     private Boolean allowReview = true;
     @Enumerated(EnumType.STRING)
@@ -68,7 +72,6 @@ public class Exam {
     private LocalDateTime updatedAt;
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt; // This field will store the deletion timestamp if soft deleted
-
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted = false; // Soft delete flag
 
@@ -94,6 +97,8 @@ public class Exam {
     @OneToMany(mappedBy = "exam", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ExamRegistration> examRegistrations = new ArrayList<>();
 
+    @OneToOne(mappedBy = "exam", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private EmailNotification emailNotification;
 
     // Exam Status Enum
     public enum ExamStatus {

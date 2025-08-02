@@ -16,11 +16,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
-@RequestMapping("/exam-attempts")
+@RequestMapping("api/v1/common/exam-attempts")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*")
 public class ExamAttemptController {
     @Autowired
     private ExamAttemptService examAttemptService;

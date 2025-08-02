@@ -55,6 +55,7 @@ public class TeacherExamController {
     public ResponseEntity<ResponseDTO> scheduleExam(@Valid @RequestBody ExamDTO examDTO) {
         log.info("Scheduling new exam: {}", examDTO.getExamName());
         ExamDTO scheduledExam = examService.examSchedule(examDTO);
+        log.info("Exam '{}' scheduled successfully with ID: {}", examDTO.getExamName(), examDTO.getId());
         return ResponseBuilder.buildSuccessResponse("Exam scheduled successfully", scheduledExam);
     }
 

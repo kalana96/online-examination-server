@@ -2,21 +2,13 @@ package com.examination.online_examination_server.service;
 
 import com.examination.online_examination_server.Utility.VarList;
 import com.examination.online_examination_server.constant.VarListt;
-import com.examination.online_examination_server.dto.ClassDTO;
-import com.examination.online_examination_server.dto.ExamDTO;
-import com.examination.online_examination_server.dto.ExamStatsDTO;
-import com.examination.online_examination_server.dto.TeacherDTO;
+import com.examination.online_examination_server.dto.*;
+import com.examination.online_examination_server.entity.*;
 import com.examination.online_examination_server.entity.Class;
-import com.examination.online_examination_server.entity.Exam;
-import com.examination.online_examination_server.entity.Student;
-import com.examination.online_examination_server.entity.Teacher;
 import com.examination.online_examination_server.exception.ResourceNotFoundException;
 import com.examination.online_examination_server.exception.exam.*;
 import com.examination.online_examination_server.exception.exam.ClassNotFoundException;
-import com.examination.online_examination_server.repository.ClassRepository;
-import com.examination.online_examination_server.repository.ExamRepository;
-import com.examination.online_examination_server.repository.StudentRepository;
-import com.examination.online_examination_server.repository.TeacherRepository;
+import com.examination.online_examination_server.repository.*;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +29,9 @@ import java.util.stream.Collectors;
 public class ExamService {
 
     @Autowired
+    private EmailNotificationRepository emailNotificationRepository;
+
+    @Autowired
     private ExamRepository examRepository;
 
     @Autowired
@@ -47,6 +42,9 @@ public class ExamService {
 
     @Autowired
     private StudentRepository studentRepository;
+
+    @Autowired
+    private ExamAttemptRepository examAttemptRepository;
 
     @Autowired
     private ModelMapper modelMapper;
@@ -274,7 +272,6 @@ public class ExamService {
             Exam exam = createExamEntity(examDTO);
             Exam savedExam = examRepository.save(exam);
 
-            log.info("Exam '{}' scheduled successfully with ID: {}", savedExam.getExamName(), savedExam.getId());
             // Convert back to DTO for response
             return convertToDTO(savedExam);
         } catch (DataAccessException ex) {
@@ -1623,6 +1620,7 @@ public class ExamService {
         exam.setStartTime(examDTO.getStartTime());
         exam.setEndTime(examDTO.getEndTime());
         exam.setStudentCount(examDTO.getStudentCount());
+        exam.setSendEmailNotification(examDTO.getEmailNotification().getSendNotification());
         exam.setProctoringStatus(examDTO.getProctoringStatus() != null ? examDTO.getProctoringStatus() : "disabled");
 
         // Set publish status (default to false for new exams)
@@ -1631,17 +1629,30 @@ public class ExamService {
             exam.setPublished(true);
             exam.setPublishedAt(LocalDateTime.now());
         }
-
         // Set class
         if (examDTO.getClassId() != null) {
             Optional<Class> classOpt = classRepository.findActiveById(examDTO.getClassId());
             classOpt.ifPresent(exam::setClazz);
         }
-
         // Set teacher
         if (examDTO.getTeacherId() != null) {
             Optional<Teacher> teacherOpt = teacherRepository.findActiveById(examDTO.getTeacherId());
             teacherOpt.ifPresent(exam::setTeacher);
+        }
+
+        // Handle email notification
+        if (examDTO.getEmailNotification() != null &&
+                examDTO.getEmailNotification().getSendNotification()) {
+
+            EmailNotification emailNotification = new EmailNotification();
+
+            emailNotification.setEmailSubject(examDTO.getEmailNotification().getEmailSubject());
+            emailNotification.setEmailMessage(examDTO.getEmailNotification().getEmailMessage());
+            emailNotification.setSendNotification(true);
+            emailNotification.setStatus(EmailNotification.EmailStatus.PENDING);
+            emailNotification.setExam(exam);
+
+            exam.setEmailNotification(emailNotification);
         }
 
         return exam;
@@ -1715,6 +1726,14 @@ public class ExamService {
             examDTO.setRegisteredStudentCount(0L);
         }
 
+        //add exam attempt count
+        try {
+            Long attempt = examAttemptRepository.countByExamIdAndStatusSubmitted(exam.getId());
+            examDTO.setAttemptCount(attempt != null ? attempt : 0L);
+        } catch (Exception ex) {
+            log.warn("Error fetching attempted student count for exam ID {}: {}", exam.getId(), ex.getMessage());
+            examDTO.setRegisteredStudentCount(0L);
+        }
         return examDTO;
     }
 
@@ -1734,6 +1753,7 @@ public class ExamService {
         examDTO.setProctoringStatus(exam.getProctoringStatus());
         examDTO.setPublished(exam.isPublished());
         examDTO.setPublishedAt(exam.getPublishedAt());
+
         // Set class information
         if (exam.getClazz() != null) {
             examDTO.setClassId(exam.getClazz().getId());
@@ -1746,6 +1766,23 @@ public class ExamService {
             TeacherDTO teacherDTO = modelMapper.map(exam.getTeacher(), TeacherDTO.class);
             examDTO.setTeacher(teacherDTO);
         }
+
+        // Handle email notification
+        if (exam.getEmailNotification() != null) {
+            EmailNotificationDTO emailNotificationDTO = new EmailNotificationDTO();
+            emailNotificationDTO.setId(exam.getEmailNotification().getId());
+            emailNotificationDTO.setEmailSubject(exam.getEmailNotification().getEmailSubject());
+            emailNotificationDTO.setEmailMessage(exam.getEmailNotification().getEmailMessage());
+            emailNotificationDTO.setSendNotification(exam.getEmailNotification().getSendNotification());
+            emailNotificationDTO.setSentAt(exam.getEmailNotification().getSentAt());
+            emailNotificationDTO.setSentCount(exam.getEmailNotification().getSentCount());
+            emailNotificationDTO.setFailedCount(exam.getEmailNotification().getFailedCount());
+            emailNotificationDTO.setStatus(exam.getEmailNotification().getStatus());
+            emailNotificationDTO.setExamId(exam.getId());
+
+            examDTO.setEmailNotification(emailNotificationDTO);
+        }
+
         return examDTO;
     }
 

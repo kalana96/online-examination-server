@@ -21,6 +21,8 @@ public interface ExamAttemptRepository extends JpaRepository<ExamAttempt, Long> 
     //    Long countByStudentIdAndExamId(Integer studentId, Integer examId);
     Long countByStudentAndExam(Student student, Exam exam);
 
+//    Long countByExamId(Integer studentId, Integer examId);
+
     List<ExamAttempt> findByExamId(Integer examId);
 
     @Query("SELECT ea FROM ExamAttempt ea WHERE ea.student.id = :studentId AND ea.exam.id = :examId")
@@ -31,6 +33,9 @@ public interface ExamAttemptRepository extends JpaRepository<ExamAttempt, Long> 
 
     @Query("SELECT COUNT(ea) FROM ExamAttempt ea WHERE ea.student.id = :studentId AND ea.exam.id = :examId")
     Long countByStudentIdAndExamId(@Param("studentId") Integer studentId, @Param("examId") Integer examId);
+
+    @Query("SELECT COUNT(ea) FROM ExamAttempt ea WHERE ea.exam.id = :examId AND ea.status = 'SUBMITTED'")
+    Long countByExamIdAndStatusSubmitted(@Param("examId") Integer examId);
 
     Optional<ExamAttempt> findByStudentIdAndExamIdAndStatus(Integer studentId, Integer examId, ExamAttempt.AttemptStatus status);
 

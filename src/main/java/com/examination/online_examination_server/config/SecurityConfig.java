@@ -36,7 +36,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/admin/**").hasAnyAuthority("ADMIN") // Only admin can access
                         .requestMatchers("/api/v1/teacher/**").hasAnyAuthority("TEACHER") // Only teacher can access
                         .requestMatchers("/api/v1/student/**").hasAnyAuthority("STUDENT") // Only student can access
-                        .requestMatchers("/common/**").hasAnyAuthority("ADMIN", "TEACHER", "STUDENT") // All roles can access
+                        .requestMatchers("/api/v1/common/**").hasAnyAuthority("ADMIN", "TEACHER", "STUDENT") // All roles can access
                         .anyRequest().authenticated()) // All other requests need authentication
                 .sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())

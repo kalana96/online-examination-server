@@ -25,7 +25,6 @@ public class StudentAnswerService {
     private final ModelMapper modelMapper;
 
 
-
     public StudentAnswerDTO saveAnswer(StudentAnswerDTO studentAnswerDTO) {
         log.info("Saving answer for student: {} and question: {}", studentAnswerDTO.getStudentId(), studentAnswerDTO.getQuestionId());
 
@@ -47,7 +46,7 @@ public class StudentAnswerService {
         }
     }
 
-//    @Transactional(readOnly = true)
+    //    @Transactional(readOnly = true)
     public List<StudentAnswerDTO> getAnswersByAttemptId(Long attemptId) {
         log.info("Fetching answers for attempt id: {}", attemptId);
 
@@ -57,7 +56,7 @@ public class StudentAnswerService {
                 .collect(Collectors.toList());
     }
 
-//    @Transactional(readOnly = true)
+    //    @Transactional(readOnly = true)
     public List<StudentAnswerDTO> getAnswersByStudentId(Integer studentId) {
         log.info("Fetching answers for student id: {}", studentId);
 
@@ -67,7 +66,7 @@ public class StudentAnswerService {
                 .collect(Collectors.toList());
     }
 
-//    @Transactional(readOnly = true)
+    //    @Transactional(readOnly = true)
     public StudentAnswerDTO getAnswerById(Long id) {
         log.info("Fetching answer with id: {}", id);
 
@@ -98,26 +97,23 @@ public class StudentAnswerService {
         studentAnswerRepository.delete(answer);
     }
 
-//    @Transactional(readOnly = true)
+    //    @Transactional(readOnly = true)
     public Long getCorrectAnswersCount(Long attemptId) {
         log.info("Getting correct answers count for attempt id: {}", attemptId);
         return studentAnswerRepository.countCorrectAnswersByAttemptId(attemptId);
     }
 
-//    @Transactional(readOnly = true)
+    //    @Transactional(readOnly = true)
     public Long getWrongAnswersCount(Long attemptId) {
         log.info("Getting wrong answers count for attempt id: {}", attemptId);
         return studentAnswerRepository.countWrongAnswersByAttemptId(attemptId);
     }
 
-//    @Transactional(readOnly = true)
+    //    @Transactional(readOnly = true)
     public Long getUnansweredCount(Long attemptId) {
         log.info("Getting unanswered questions count for attempt id: {}", attemptId);
         return studentAnswerRepository.countUnansweredByAttemptId(attemptId);
     }
-
-
-
 
 
 }

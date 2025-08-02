@@ -116,7 +116,7 @@ public interface ExamRepository extends JpaRepository<Exam, Integer> {
     /**
      * Find active exams by teacher ID
      */
-    @Query("SELECT e FROM Exam e WHERE e.teacher.id = :teacherId AND e.isDeleted = false ORDER BY e.examDate DESC")
+    @Query("SELECT e FROM Exam e WHERE e.teacher.id = :teacherId AND e.isDeleted = false ORDER BY e.examDate ASC ")
     List<Exam> findActiveByTeacherId(@Param("teacherId") Integer teacherId);
 
     /**

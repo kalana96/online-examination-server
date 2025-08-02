@@ -34,6 +34,12 @@ public class ExamDTO {
     private ClassDTO clazz; // Nested classes information
 
     private Long registeredStudentCount = 0L;
+    private Long attemptCount = 0L;
+
+    //field for email notification
+//    private Boolean sendEmailNotification = false;
+
+    private EmailNotificationDTO emailNotification;
 
     private Boolean isRandomizeQuestions = false;
     private Boolean isRandomizeOptions = false;

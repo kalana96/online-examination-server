@@ -1,5 +1,6 @@
 package com.examination.online_examination_server.dto;
 
+import com.examination.online_examination_server.dto.QuestionDTO.QuestionResponseDTO;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -29,4 +30,7 @@ public class StudentAnswerDTO {
 
     @NotNull(message = "Student ID is required")
     private Integer studentId;
+
+    // Added question details
+    private QuestionResponseDTO questionDetails;
 }
