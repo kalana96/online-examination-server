@@ -32,7 +32,14 @@ public class SecurityConfig {
         httpSecurity.csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(request -> request
-                        .requestMatchers("/api/v1/auth/**", "/public/**").permitAll()
+
+                        // Public endpoints
+                        .requestMatchers("/api/v1/auth/**", "/public/**").permitAll() // Public endpoints
+
+                        // WebSocket endpoints - allow for initial handshake, security handled in WebSocket interceptor
+                        .requestMatchers("/ws/**", "/ws/chat/**").permitAll()
+
+                        // Role-based access
                         .requestMatchers("/api/v1/admin/**").hasAnyAuthority("ADMIN") // Only admin can access
                         .requestMatchers("/api/v1/teacher/**").hasAnyAuthority("TEACHER") // Only teacher can access
                         .requestMatchers("/api/v1/student/**").hasAnyAuthority("STUDENT") // Only student can access

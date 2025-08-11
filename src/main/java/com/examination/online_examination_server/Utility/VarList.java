@@ -21,4 +21,5 @@ public class VarList {
     public static final String RES_SUBJECT_NOT_FOUND       =  "20";
     public static final String RES_TEACHER_NOT_FOUND       =  "21";
     public static final String RES_INVALID_TEACHER_CLASS_ASSOCIATION = "22";
+    public static final String RES_INVALID_PUBLISH_DATE              = "23";
 }

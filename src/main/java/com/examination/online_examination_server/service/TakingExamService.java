@@ -63,11 +63,13 @@ public class TakingExamService {
             throw new ExamNotAvailableException("Exam is not currently available");
         }
 
+
         // Check if student is registered for this exam
         boolean isRegistered = examRegistrationRepository.existsByExamIdAndStudentId(examId, studentId);
         if (!isRegistered) {
             throw new StudentNotRegisteredException("Student is not registered for this exam");
         }
+
 
         // Check attempt count vs max attempts
         Long attemptCount = examAttemptRepository.countByStudentIdAndExamId(studentId, examId);
@@ -75,9 +77,10 @@ public class TakingExamService {
             throw new MaxAttemptsExceededException("Maximum attempts exceeded for this exam");
         }
 
+        log.info("check already a submitted attempt this exam {} and student {}", examId, studentId);
         // Check if there's already a submitted attempt
         Optional<ExamAttempt> submittedAttempt = examAttemptRepository.findByStudentIdAndExamIdAndStatus(studentId, examId, ExamAttempt.AttemptStatus.SUBMITTED);
-
+        log.info("check already a submitted attempt this exam {} and student {}", examId, studentId);
         if (submittedAttempt.isPresent()) {
             throw new ExamAlreadySubmittedException("You have already submitted this exam and cannot retake it");
         }
@@ -137,6 +140,7 @@ public class TakingExamService {
         sessionDTO.setExistingAnswers(answerMap);
         sessionDTO.setTotalQuestions(questions.size());
         sessionDTO.setMaxMarks(examAttempt.getExam().getMaxMark());
+        sessionDTO.setStudentName(examAttempt.getStudent().getFirstName() + " " + examAttempt.getStudent().getLastName());
 
         return sessionDTO;
     }

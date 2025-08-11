@@ -17,7 +17,7 @@ public class CorsConfig {
                 registry.addMapping("/**") // Allow CORS for all endpoints
 //                        .allowedOrigins("*"); // Allow all headers
                         .allowedOrigins("http://localhost:5173") // Allow only this origin
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "OPTIONS") // Specify allowed methods
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH") // Specify allowed methods
                         .allowedHeaders(
                                 "Authorization",
                                 "Content-Type",

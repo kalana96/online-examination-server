@@ -39,6 +39,16 @@ public class ExamAttemptController {
         return ResponseEntity.ok(submittedAttempt);
     }
 
+    @GetMapping("/submission-status")
+    public ResponseEntity<Boolean> hasStudentSubmittedExam(
+            @RequestParam Integer studentId,
+            @RequestParam Integer examId) {
+
+        log.info("Checking submission status for student: {} and exam: {}", studentId, examId);
+        boolean hasSubmitted = examAttemptService.hasStudentSubmittedExam(studentId, examId);
+        return ResponseEntity.ok(hasSubmitted);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ExamAttemptDTO> getExamAttemptById(@PathVariable Long id) {
         log.info("Fetching exam attempt with id: {}", id);

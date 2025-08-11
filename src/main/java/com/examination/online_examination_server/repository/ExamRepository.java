@@ -143,11 +143,13 @@ public interface ExamRepository extends JpaRepository<Exam, Integer> {
     List<Exam> findUpcomingExams();
 
     /**
-     * Find past active exams
+     * Find completed past exams by teacher (exams that have ended)
      */
-    @Query("SELECT e FROM Exam e WHERE e.teacher.id = :teacherId AND e.examDate < CURRENT_TIMESTAMP " +
+    @Query("SELECT e FROM Exam e WHERE e.teacher.id = :teacherId " +
+            "AND (e.examDate < CURRENT_DATE OR " +
+            "(e.examDate = CURRENT_DATE AND CAST(e.endTime AS time) < CURRENT_TIME)) " +
             "AND e.isPublished = true AND e.isDeleted = false ORDER BY e.examDate DESC")
-    List<Exam> findPublishedPastExamsByTeacher(@Param("teacherId") Integer teacherId);
+    List<Exam> findPublishedCompletedExamsByTeacher(@Param("teacherId") Integer teacherId);
 
     /**
      * Find active exams by exam type

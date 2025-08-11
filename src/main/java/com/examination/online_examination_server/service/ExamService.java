@@ -779,7 +779,7 @@ public class ExamService {
         try {
             log.info("Fetching all past exams");
 
-            List<Exam> exams = examRepository.findPublishedPastExamsByTeacher(teacherId);
+            List<Exam> exams = examRepository.findPublishedCompletedExamsByTeacher(teacherId);
             return exams.stream()
                     .map(this::mapExamToDTO)
                     .collect(Collectors.toList());
@@ -941,7 +941,7 @@ public class ExamService {
                 // Check if exam date is not in the past
                 if (exam.getExamDate().isBefore(LocalDate.now())) {
                     log.warn("Cannot publish exam scheduled for past date");
-                    return VarList.RES_INVALID_INPUT;
+                    return VarList.RES_INVALID_PUBLISH_DATE;
                 }
 
                 // Check if pass mark is not greater than max mark

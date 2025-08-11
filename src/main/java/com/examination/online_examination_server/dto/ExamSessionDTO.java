@@ -17,6 +17,7 @@ public class ExamSessionDTO {
     private Integer examId;
     private Integer studentId;
     private String examName;
+    private String studentName;
     private Integer durationMinutes;
     private LocalDateTime startTime;
     private List<QuestionTakeDTO> questions;

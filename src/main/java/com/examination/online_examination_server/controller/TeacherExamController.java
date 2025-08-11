@@ -523,6 +523,9 @@ public class TeacherExamController {
                 case VarList.RES_NO_DATE_FOUND:
                     return createErrorResponse(VarList.RES_NO_DATE_FOUND,
                             "Exam not found with ID: " + examId, HttpStatus.NOT_FOUND);
+                case VarList.RES_INVALID_PUBLISH_DATE:
+                    return createErrorResponse(VarList.RES_INVALID_PUBLISH_DATE,
+                            "Cannot publish exam scheduled for past date", HttpStatus.BAD_REQUEST);
                 case VarList.RES_INVALID_INPUT:
                     return createErrorResponse(VarList.RES_INVALID_INPUT,
                             "Invalid input data or exam cannot be published", HttpStatus.BAD_REQUEST);

@@ -2,9 +2,7 @@ package com.examination.online_examination_server.entity;
 
 import com.examination.online_examination_server.enums.UserRole;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 import org.springframework.security.core.GrantedAuthority;
@@ -56,6 +54,8 @@ public class User implements UserDetails {
     // Relationships instead of primitive FKs
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id")
+    @ToString.Exclude //new
+    @EqualsAndHashCode.Exclude //new
     private Student student;
 
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
@@ -76,6 +76,20 @@ public class User implements UserDetails {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
+
+    // Custom toString method that doesn't access lazy-loaded entities
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", username='" + username + '\'' +
+                ", role=" + role +
+                ", isActive=" + isActive +
+                ", isDeleted=" + isDeleted +
+                '}';
+    }
+
 
     // UserDetails interface implementation
     @Override

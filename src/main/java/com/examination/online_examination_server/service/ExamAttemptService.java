@@ -243,5 +243,24 @@ public class ExamAttemptService {
         return timeRemaining;
     }
 
+    /**
+     * Check if student has already submitted the exam
+     *
+     * @param studentId the student ID
+     * @param examId    the exam ID
+     * @return true if student has submitted the exam, false otherwise
+     */
+    public boolean hasStudentSubmittedExam(Integer studentId, Integer examId) {
+        log.info("Checking if student {} has submitted exam {}", studentId, examId);
+
+        Long submittedCount = examAttemptRepository.countByStudentIdAndExamIdAndStatus(
+                studentId, examId, ExamAttempt.AttemptStatus.SUBMITTED);
+
+        Long autoSubmittedCount = examAttemptRepository.countByStudentIdAndExamIdAndStatus(
+                studentId, examId, ExamAttempt.AttemptStatus.AUTO_SUBMITTED);
+
+        return (submittedCount + autoSubmittedCount) > 0;
+    }
+
 
 }
