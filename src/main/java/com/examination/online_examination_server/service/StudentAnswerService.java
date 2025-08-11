@@ -1,5 +1,6 @@
 package com.examination.online_examination_server.service;
 
+import com.examination.online_examination_server.dto.MarkAnswerRequestDTO;
 import com.examination.online_examination_server.dto.StudentAnswerDTO;
 import com.examination.online_examination_server.entity.StudentAnswer;
 import com.examination.online_examination_server.exception.ResourceNotFoundException;
@@ -22,7 +23,53 @@ public class StudentAnswerService {
 
     @Autowired
     private StudentAnswerRepository studentAnswerRepository;
+
+    @Autowired
+    private ExamAttemptService examAttemptService;
+
     private final ModelMapper modelMapper;
+
+
+    /**
+     * Mark a student answer with marks and feedback
+     */
+    public StudentAnswerDTO markAnswer(Long answerId, MarkAnswerRequestDTO markAnswerRequestDTO) {
+        log.info("Marking student answer with id: {}", answerId);
+
+        StudentAnswer answer = studentAnswerRepository.findById(answerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Student answer not found with id: " + answerId));
+
+        // Update marking information
+        answer.setMarksAwarded(markAnswerRequestDTO.getMarksAwarded());
+        answer.setIsCorrect(markAnswerRequestDTO.getIsCorrect());
+        answer.setTeacherFeedback(markAnswerRequestDTO.getTeacherFeedback());
+        answer.setIsMarked(true);
+
+        StudentAnswer savedAnswer = studentAnswerRepository.save(answer);
+
+        // Update exam attempt total score
+        examAttemptService.updateExamAttemptScore(answer.getExamAttempt().getId());
+
+        return modelMapper.map(savedAnswer, StudentAnswerDTO.class);
+    }
+
+    /**
+     * Flag/unflag a student answer
+     */
+    public StudentAnswerDTO flagAnswer(Long answerId, String flagReason) {
+        log.info("Flagging student answer with id: {}", answerId);
+
+        StudentAnswer answer = studentAnswerRepository.findById(answerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Student answer not found with id: " + answerId));
+
+        // Toggle flag status
+        answer.setIsFlagged(!answer.getIsFlagged());
+        answer.setFlagReason(answer.getIsFlagged() ? flagReason : null);
+
+        StudentAnswer savedAnswer = studentAnswerRepository.save(answer);
+        return modelMapper.map(savedAnswer, StudentAnswerDTO.class);
+    }
+
 
 
     public StudentAnswerDTO saveAnswer(StudentAnswerDTO studentAnswerDTO) {

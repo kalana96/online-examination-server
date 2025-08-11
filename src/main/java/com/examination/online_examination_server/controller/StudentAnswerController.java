@@ -1,6 +1,7 @@
 package com.examination.online_examination_server.controller;
 
 import com.examination.online_examination_server.dto.ExamAttemptDTO;
+import com.examination.online_examination_server.dto.MarkAnswerRequestDTO;
 import com.examination.online_examination_server.dto.StudentAnswerDTO;
 import com.examination.online_examination_server.service.ExamAttemptService;
 import com.examination.online_examination_server.service.StudentAnswerService;
@@ -89,6 +90,31 @@ public class StudentAnswerController {
         log.info("Getting unanswered questions count for attempt id: {}", attemptId);
         Long count = studentAnswerService.getUnansweredCount(attemptId);
         return ResponseEntity.ok(count);
+    }
+
+
+    //Marking
+    @PutMapping("/{id}/mark")
+    public ResponseEntity<StudentAnswerDTO> markStudentAnswer(
+            @PathVariable Long id,
+            @Valid @RequestBody MarkAnswerRequestDTO markAnswerRequestDTO) {
+
+        log.info("Marking answer with id: {} - marks: {}, isCorrect: {}",
+                id, markAnswerRequestDTO.getMarksAwarded(), markAnswerRequestDTO.getIsCorrect());
+
+        StudentAnswerDTO markedAnswer = studentAnswerService.markAnswer(id, markAnswerRequestDTO);
+        return ResponseEntity.ok(markedAnswer);
+    }
+
+    @PutMapping("/{id}/flag")
+    public ResponseEntity<StudentAnswerDTO> flagStudentAnswer(
+            @PathVariable Long id,
+            @RequestParam(required = false) String flagReason) {
+
+        log.info("Flagging answer with id: {} - reason: {}", id, flagReason);
+
+        StudentAnswerDTO flaggedAnswer = studentAnswerService.flagAnswer(id, flagReason);
+        return ResponseEntity.ok(flaggedAnswer);
     }
 
 }

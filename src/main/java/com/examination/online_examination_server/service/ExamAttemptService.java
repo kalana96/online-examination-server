@@ -263,4 +263,40 @@ public class ExamAttemptService {
     }
 
 
+    /**
+     * Update exam attempt score and percentage based on marked answers
+     */
+    public void updateExamAttemptScore(Long attemptId) {
+        log.info("Updating exam attempt score for attempt id: {}", attemptId);
+
+        ExamAttempt examAttempt = examAttemptRepository.findById(attemptId)
+                .orElseThrow(() -> new ResourceNotFoundException("Exam attempt not found with id: " + attemptId));
+
+        // Calculate total marks awarded
+        Double totalScore = examAttempt.getStudentAnswers()
+                .stream()
+                .filter(answer -> answer.getIsMarked() != null && answer.getIsMarked() && answer.getMarksAwarded() != null)
+                .mapToDouble(StudentAnswer::getMarksAwarded)
+                .sum();
+
+        // Calculate total possible marks
+        Double totalPossibleMarks = examAttempt.getStudentAnswers()
+                .stream()
+                .filter(answer -> answer.getQuestion() != null && answer.getQuestion().getMarks() != null)
+                .mapToDouble(answer -> answer.getQuestion().getMarks().doubleValue())
+                .sum();
+
+        // Calculate percentage
+        Double percentage = totalPossibleMarks > 0 ? (totalScore / totalPossibleMarks) * 100 : 0.0;
+
+        // Update exam attempt
+        examAttempt.setScore(totalScore);
+        examAttempt.setTotalMarks(totalPossibleMarks.intValue());
+        examAttempt.setPercentage(percentage);
+
+        examAttemptRepository.save(examAttempt);
+
+        log.info("Updated exam attempt {} score: {}/{} ({}%)",
+                attemptId, totalScore, totalPossibleMarks, percentage);
+    }
 }

@@ -1,12 +1,9 @@
 package com.examination.online_examination_server.controller;
 
 import com.examination.online_examination_server.Utility.ResponseBuilder;
-import com.examination.online_examination_server.dto.QuestionBankDTO.*;
 import com.examination.online_examination_server.dto.QuestionDTO.*;
 import com.examination.online_examination_server.dto.ResponseDTO;
 import com.examination.online_examination_server.entity.Question;
-import com.examination.online_examination_server.entity.QuestionBank;
-import com.examination.online_examination_server.service.QuestionBankService;
 import com.examination.online_examination_server.service.QuestionService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;

@@ -1,4 +1,4 @@
-package com.examination.online_examination_server.dto.QuestionBankDTO;
+package com.examination.online_examination_server.dto.QuestionBankDTOs;
 
 import com.examination.online_examination_server.entity.QuestionBank;
 import lombok.AllArgsConstructor;

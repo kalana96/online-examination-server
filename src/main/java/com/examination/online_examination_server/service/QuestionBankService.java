@@ -1,7 +1,7 @@
 package com.examination.online_examination_server.service;
 
 import com.examination.online_examination_server.constant.VarListt;
-import com.examination.online_examination_server.dto.QuestionBankDTO.*;
+import com.examination.online_examination_server.dto.QuestionBankDTOs.*;
 import com.examination.online_examination_server.entity.QuestionBank;
 import com.examination.online_examination_server.entity.Subject;
 import com.examination.online_examination_server.entity.Class;
